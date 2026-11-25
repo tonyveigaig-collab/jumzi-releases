@@ -53,6 +53,7 @@ jobs:
           - { name: mac, os: macos-15, args: "--mac dmg zip --x64 --arm64" }
           - { name: linux-x64, os: ubuntu-24.04, args: "--linux AppImage deb rpm --x64" }
           - { name: linux-arm64, os: ubuntu-24.04-arm, args: "--linux AppImage deb rpm --arm64" }
+    timeout-minutes: 45
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -106,6 +107,7 @@ jobs:
         include:
           - { name: windows-x64, os: windows-latest, arch: x64 }
           - { name: windows-arm64, os: windows-11-arm, arch: arm64 }
+    timeout-minutes: 25
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/download-artifact@v4
@@ -113,27 +115,33 @@ jobs:
       - name: Install (.exe) and run
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath "pkg\JUMZI-Setup-${{ matrix.arch }}.exe" -ArgumentList "/S" -Wait -PassThru
+          $p = Start-Process -FilePath "pkg\JUMZI-Setup-${{ matrix.arch }}.exe" -ArgumentList "/S" -PassThru
+          if (-not $p.WaitForExit(300000)) { throw "installer did not finish in 5 min" }
           if ($p.ExitCode -ne 0) { throw "installer exit $($p.ExitCode)" }
           $exe = "$env:LOCALAPPDATA\Programs\jumzi-desktop\JUMZI.exe"
           if (-not (Test-Path $exe)) { throw "JUMZI.exe not installed at $exe" }
           if (-not (Get-ItemProperty "HKCU:\Software\Classes\jumzi" -ErrorAction SilentlyContinue)) { throw "jumzi:// not registered" }
-          $r = Start-Process -FilePath $exe -ArgumentList "--smoke-test","--smoke-out=$pwd\smoke-exe.json" -Wait -PassThru
+          $r = Start-Process -FilePath $exe -ArgumentList "--smoke-test","--smoke-out=$pwd\smoke-exe.json" -PassThru
+          if (-not $r.WaitForExit(180000)) { throw "app did not finish the smoke test in 3 min" }
           Get-Content smoke-exe.json
           if ($r.ExitCode -ne 0) { throw "smoke test failed ($($r.ExitCode))" }
-          $u = Start-Process -FilePath "$env:LOCALAPPDATA\Programs\jumzi-desktop\Uninstall JUMZI.exe" -ArgumentList "/S" -Wait -PassThru
+          $u = Start-Process -FilePath "$env:LOCALAPPDATA\Programs\jumzi-desktop\Uninstall JUMZI.exe" -ArgumentList "/S" -PassThru
+          [void]$u.WaitForExit(120000)
           "uninstall exit $($u.ExitCode)"
       - name: Install (.msi) and run
         shell: pwsh
         run: |
-          $p = Start-Process msiexec.exe -ArgumentList "/i","pkg\JUMZI-${{ matrix.arch }}.msi","/qn","/l*v","msi.log" -Wait -PassThru
+          $p = Start-Process msiexec.exe -ArgumentList "/i","pkg\JUMZI-${{ matrix.arch }}.msi","/qn","/norestart","/l*v","msi.log" -PassThru
+          if (-not $p.WaitForExit(420000)) { Get-Content msi.log -Tail 80; throw "msiexec did not finish in 7 min" }
           if ($p.ExitCode -ne 0) { Get-Content msi.log -Tail 60; throw "msiexec exit $($p.ExitCode)" }
           $exe = Get-ChildItem "$env:ProgramFiles","${env:ProgramFiles(x86)}" -Recurse -Filter JUMZI.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $exe) { throw "JUMZI.exe not found after MSI install" }
-          $r = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke-test","--smoke-out=$pwd\smoke-msi.json" -Wait -PassThru
+          $r = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke-test","--smoke-out=$pwd\smoke-msi.json" -PassThru
+          if (-not $r.WaitForExit(180000)) { throw "app did not finish the smoke test in 3 min" }
           Get-Content smoke-msi.json
           if ($r.ExitCode -ne 0) { throw "smoke test failed ($($r.ExitCode))" }
-          $u = Start-Process msiexec.exe -ArgumentList "/x","pkg\JUMZI-${{ matrix.arch }}.msi","/qn" -Wait -PassThru
+          $u = Start-Process msiexec.exe -ArgumentList "/x","pkg\JUMZI-${{ matrix.arch }}.msi","/qn","/norestart" -PassThru
+          [void]$u.WaitForExit(300000)
           "uninstall exit $($u.ExitCode)"
       - name: Signature
         shell: pwsh
@@ -150,6 +158,7 @@ jobs:
         include:
           - { arch: arm64, os: macos-15 }
           - { arch: x64, os: macos-15-intel }
+    timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/download-artifact@v4
@@ -179,6 +188,7 @@ jobs:
         include:
           - { arch: x64, os: ubuntu-24.04, deb: amd64, rpm: x86_64, appimage: x86_64 }
           - { arch: arm64, os: ubuntu-24.04-arm, deb: arm64, rpm: aarch64, appimage: arm64 }
+    timeout-minutes: 25
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/download-artifact@v4
