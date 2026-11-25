@@ -190,7 +190,7 @@ jobs:
           grep -q "x-scheme-handler/jumzi" /usr/share/applications/jumzi.desktop
           xvfb-run -a jumzi --smoke-test --smoke-out="$PWD/smoke-deb.json"
           cat smoke-deb.json
-          sudo apt-get remove -y jumzi
+          sudo apt-get remove -y jumzi-desktop
       - name: AppImage
         run: |
           chmod +x "pkg/JUMZI-${{ matrix.appimage }}.AppImage"
