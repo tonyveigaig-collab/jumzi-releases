@@ -161,7 +161,8 @@ jobs:
           /Applications/JUMZI.app/Contents/MacOS/JUMZI --smoke-test --smoke-out="$PWD/smoke.json"
           cat smoke.json
       - name: Gatekeeper (signed builds)
-        run: spctl --assess --type execute --verbose /Applications/JUMZI.app || echo "::warning::Não assinado/notarizado: o macOS vai pedir confirmação ao abrir"
+        run: |
+          spctl --assess --type execute --verbose /Applications/JUMZI.app || echo "::warning::Não assinado/notarizado: o macOS vai pedir confirmação ao abrir"
 
   test-linux:
     name: Test linux-${{ matrix.arch }}
