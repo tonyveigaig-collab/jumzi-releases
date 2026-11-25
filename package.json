@@ -83,7 +83,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "JUMZI",
       "runAfterFinish": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     },
     "msi": {
       "artifactName": "JUMZI-${arch}.${ext}",

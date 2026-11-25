@@ -177,8 +177,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x64, os: ubuntu-24.04 }
-          - { arch: arm64, os: ubuntu-24.04-arm }
+          - { arch: x64, os: ubuntu-24.04, deb: amd64, rpm: x86_64, appimage: x86_64 }
+          - { arch: arm64, os: ubuntu-24.04-arm, deb: arm64, rpm: aarch64, appimage: arm64 }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/download-artifact@v4
@@ -186,20 +186,20 @@ jobs:
       - name: Install (.deb) and run
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb "./pkg/jumzi_${{ matrix.arch }}.deb"
+          sudo apt-get install -y xvfb "./pkg/jumzi_${{ matrix.deb }}.deb"
           grep -q "x-scheme-handler/jumzi" /usr/share/applications/jumzi.desktop
           xvfb-run -a jumzi --smoke-test --smoke-out="$PWD/smoke-deb.json"
           cat smoke-deb.json
           sudo apt-get remove -y jumzi
       - name: AppImage
         run: |
-          chmod +x "pkg/JUMZI-${{ matrix.arch }}.AppImage"
-          xvfb-run -a "pkg/JUMZI-${{ matrix.arch }}.AppImage" --appimage-extract-and-run --no-sandbox --smoke-test --smoke-out="$PWD/smoke-appimage.json"
+          chmod +x "pkg/JUMZI-${{ matrix.appimage }}.AppImage"
+          xvfb-run -a "pkg/JUMZI-${{ matrix.appimage }}.AppImage" --appimage-extract-and-run --no-sandbox --smoke-test --smoke-out="$PWD/smoke-appimage.json"
           cat smoke-appimage.json
       - name: Install (.rpm) on Fedora and run
         run: |
           docker run --rm --shm-size=1g -v "$PWD:/w" fedora:41 bash -euxc '
-            dnf install -y "/w/pkg/jumzi-${{ matrix.arch }}.rpm" xorg-x11-server-Xvfb xorg-x11-xauth which >/dev/null
+            dnf install -y "/w/pkg/jumzi-${{ matrix.rpm }}.rpm" xorg-x11-server-Xvfb xorg-x11-xauth which >/dev/null
             grep -q "x-scheme-handler/jumzi" /usr/share/applications/jumzi.desktop
             xvfb-run -a /opt/JUMZI/jumzi --no-sandbox --smoke-test --smoke-out=/w/smoke-rpm.json
           '
