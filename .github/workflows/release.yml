@@ -50,7 +50,7 @@ jobs:
         include:
           - { name: windows-x64, os: windows-latest, args: "--win nsis msi --x64" }
           - { name: windows-arm64, os: windows-latest, args: "--win nsis msi --arm64 -c.publish.channel=latest-arm64" }
-          - { name: mac, os: macos-14, args: "--mac dmg zip --x64 --arm64" }
+          - { name: mac, os: macos-15, args: "--mac dmg zip --x64 --arm64" }
           - { name: linux-x64, os: ubuntu-24.04, args: "--linux AppImage deb rpm --x64" }
           - { name: linux-arm64, os: ubuntu-24.04-arm, args: "--linux AppImage deb rpm --arm64" }
     runs-on: ${{ matrix.os }}
@@ -98,6 +98,8 @@ jobs:
   test-windows:
     name: Test ${{ matrix.name }}
     needs: build
+    # Test whatever was built, even if another system's build failed (publishing still needs all).
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
@@ -140,11 +142,13 @@ jobs:
   test-mac:
     name: Test mac-${{ matrix.arch }}
     needs: build
+    # Test whatever was built, even if another system's build failed (publishing still needs all).
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { arch: arm64, os: macos-14 }
+          - { arch: arm64, os: macos-15 }
           - { arch: x64, os: macos-15-intel }
     runs-on: ${{ matrix.os }}
     steps:
@@ -167,6 +171,8 @@ jobs:
   test-linux:
     name: Test linux-${{ matrix.arch }}
     needs: build
+    # Test whatever was built, even if another system's build failed (publishing still needs all).
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
