@@ -134,8 +134,11 @@ jobs:
           $p = Start-Process msiexec.exe -ArgumentList "/i","pkg\JUMZI-${{ matrix.arch }}.msi","/qn","/norestart","/l*v","msi.log" -PassThru
           if (-not $p.WaitForExit(420000)) { Get-Content msi.log -Tail 80; throw "msiexec did not finish in 7 min" }
           if ($p.ExitCode -ne 0) { Get-Content msi.log -Tail 60; throw "msiexec exit $($p.ExitCode)" }
-          $exe = Get-ChildItem "$env:ProgramFiles","${env:ProgramFiles(x86)}" -Recurse -Filter JUMZI.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $exe) { throw "JUMZI.exe not found after MSI install" }
+          # Per-machine MSI installs under Program Files\JUMZI (look only there: the runner has huge toolchains).
+          $exe = Get-ChildItem "$env:ProgramFiles","${env:ProgramFiles(x86)}" -Directory -Filter "*JUMZI*" -ErrorAction SilentlyContinue |
+            ForEach-Object { Join-Path $_.FullName "JUMZI.exe" } | Where-Object { Test-Path $_ } | Select-Object -First 1 | Get-Item
+          if (-not $exe) { Get-Content msi.log -Tail 40; throw "JUMZI.exe not found after MSI install" }
+          "installed at $($exe.FullName)"
           $r = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke-test","--smoke-out=$pwd\smoke-msi.json" -PassThru
           if (-not $r.WaitForExit(180000)) { throw "app did not finish the smoke test in 3 min" }
           Get-Content smoke-msi.json
