@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <title>Diagnóstico do JUMZI</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; background: #1c1c1e; color: #f5f5f7; }
+      header { padding: 20px 22px 8px; }
+      h1 { margin: 0; font-size: 18px; font-weight: 650; }
+      p.lead { margin: 4px 0 0; color: #c7c7cc; }
+      main { padding: 8px 22px 22px; }
+      dl { display: grid; grid-template-columns: 170px 1fr; gap: 8px 14px; margin: 14px 0; }
+      dt { color: #c7c7cc; }
+      dd { margin: 0; word-break: break-word; }
+      .ok { color: #5ee0c0; } .bad { color: #ff9a7d; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+      button { border: 0; border-radius: 10px; padding: 9px 14px; font: 600 13px inherit; background: #2c2c2e; color: #f5f5f7; cursor: pointer; min-height: 36px; }
+      button.primary { background: #f5f5f7; color: #111114; }
+      button:focus-visible { outline: 2px solid #f5f5f7; outline-offset: 2px; }
+      pre { background: #111114; border-radius: 10px; padding: 12px; max-height: 180px; overflow: auto; font: 11px ui-monospace, Menlo, Consolas, monospace; color: #d1d1d6; }
+      #status { margin-left: 4px; color: #c7c7cc; align-self: center; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Diagnóstico do JUMZI</h1>
+      <p class="lead">Informações do app e do computador para resolver problemas. Nada pessoal é enviado.</p>
+    </header>
+    <main>
+      <dl id="info"><dt>Carregando…</dt><dd></dd></dl>
+      <div class="row">
+        <button class="primary" id="send">Enviar ao suporte</button>
+        <button id="copy">Copiar relatório</button>
+        <button id="logs">Abrir pasta de registros</button>
+        <button id="again">Verificar de novo</button>
+        <span id="status" role="status"></span>
+      </div>
+      <pre id="log" aria-label="Registro recente"></pre>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => String(s ?? "—").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+      const tone = (v) => (/^ok|granted|enabled/.test(String(v)) ? "ok" : /falhou|denied|disabled|restricted|HTTP/.test(String(v)) ? "bad" : "");
+      async function load() {
+        $("status").textContent = "Verificando…";
+        const r = await window.diag.collect();
+        const rows = [
+          ["Versão do JUMZI", `${r.version} (${r.installType})`],
+          ["Sistema", `${r.os.name} ${r.os.release} · ${r.arch}`],
+          ["Processador", `${r.os.cpu} · ${r.os.cores} núcleos · ${r.os.memoryGB} GB`],
+          ["Atualizações", `${r.update.status ?? "—"}${r.update.version ? " · " + r.update.version : ""}${r.update.error ? " · " + r.update.error : ""}`],
+          ["Conexão com o site", r.connection.site],
+          ["Conexão com o servidor", r.connection.api],
+          ["Câmera", r.permissions.camera],
+          ["Microfone", r.permissions.microphone],
+          ["Tela (apresentar)", r.permissions.screen],
+          ["Gráficos (WebGL)", `${r.gpu.webgl ?? "—"} / WebGL2 ${r.gpu.webgl2 ?? "—"}`],
+          ["Uso agora", `CPU ${r.performance.cpuPercent}% · memória ${r.performance.memoryMB} MB · ${r.performance.processes} processos`],
+          ["Falhas registradas", String(r.crashDumps)],
+          ["Electron / Chrome", `${r.electron} / ${r.versions.chrome}`],
+        ];
+        $("info").innerHTML = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd class="${tone(v)}">${esc(v)}</dd>`).join("");
+        $("log").textContent = r.log || "(vazio)";
+        $("status").textContent = "";
+      }
+      $("again").onclick = load;
+      $("copy").onclick = async () => { await window.diag.copy(); $("status").textContent = "Relatório copiado."; };
+      $("logs").onclick = () => window.diag.openLogs();
+      $("send").onclick = async () => { $("status").textContent = "Enviando…"; await window.diag.send(); $("status").textContent = "Enviado. Obrigado!"; };
+      load();
+    </script>
+  </body>
+</html>

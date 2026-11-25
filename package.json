@@ -1,0 +1,185 @@
+{
+  "name": "jumzi-desktop",
+  "productName": "JUMZI",
+  "version": "1.1.0",
+  "description": "JUMZI para Windows, macOS e Linux",
+  "private": true,
+  "main": "main.js",
+  "author": {
+    "name": "JUMZI",
+    "email": "tonyveigaig-collab@users.noreply.github.com"
+  },
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke-test",
+    "dist:win": "electron-builder --win --x64",
+    "dist:win:arm64": "electron-builder --win --arm64 -c.publish.channel=latest-arm64",
+    "dist:mac": "electron-builder --mac --x64 --arm64",
+    "dist:linux": "electron-builder --linux --x64 --arm64",
+    "test": "node --test"
+  },
+  "build": {
+    "appId": "app.jumzi.desktop",
+    "productName": "JUMZI",
+    "copyright": "© JUMZI",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-app.js",
+      "preload-diag.js",
+      "picker.html",
+      "diagnostics.html",
+      "src/**",
+      "assets/**",
+      "package.json"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "protocols": [
+      {
+        "name": "JUMZI",
+        "schemes": [
+          "jumzi"
+        ]
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "tonyveigaig-collab",
+      "repo": "jumzi-releases",
+      "releaseType": "release"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
+      "grantFileProtocolExtraPrivileges": false,
+      "resetAdHocDarwinSignature": true
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "msi"
+      ],
+      "icon": "build/icon.png",
+      "signtoolOptions": {
+        "publisherName": "JUMZI",
+        "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+      }
+    },
+    "nsis": {
+      "artifactName": "JUMZI-Setup-${arch}.${ext}",
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JUMZI",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "msi": {
+      "artifactName": "JUMZI-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JUMZI",
+      "runAfterFinish": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.business",
+      "icon": "build/icon-mac.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "minimumSystemVersion": "11.0",
+      "extendInfo": {
+        "NSCameraUsageDescription": "O JUMZI usa a câmera nas reuniões.",
+        "NSMicrophoneUsageDescription": "O JUMZI usa o microfone para você conversar com o time.",
+        "NSScreenCaptureUsageDescription": "O JUMZI compartilha a sua tela quando você apresenta."
+      },
+      "artifactName": "JUMZI-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "JUMZI-${arch}.${ext}",
+      "title": "JUMZI"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "build/icon.png",
+      "category": "Network;InstantMessaging;Office",
+      "executableName": "jumzi",
+      "synopsis": "Escritório virtual da sua equipe",
+      "description": "JUMZI: o escritório virtual da sua equipe, com reuniões, voz, vídeo e compartilhamento de tela.",
+      "maintainer": "JUMZI <tonyveigaig-collab@users.noreply.github.com>",
+      "vendor": "JUMZI",
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "JUMZI"
+        }
+      }
+    },
+    "appImage": {
+      "artifactName": "JUMZI-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "jumzi_${arch}.${ext}",
+      "depends": [
+        "libnotify4",
+        "libxtst6",
+        "libnss3",
+        "libsecret-1-0",
+        "libasound2t64 | libasound2",
+        "xdg-utils"
+      ]
+    },
+    "rpm": {
+      "artifactName": "jumzi-${arch}.${ext}",
+      "depends": [
+        "libnotify",
+        "libXtst",
+        "nss",
+        "libsecret",
+        "alsa-lib",
+        "xdg-utils"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "homepage": "https://jumzi.vercel.app"
+}

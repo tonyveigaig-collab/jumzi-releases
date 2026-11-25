@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <title>Apresentar</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; background: #1c1c1e; color: #f5f5f7; display: flex; flex-direction: column; height: 100vh; }
+      header { padding: 18px 20px 6px; }
+      h1 { margin: 0; font-size: 17px; font-weight: 650; }
+      p { margin: 4px 0 0; color: #a1a1a6; }
+      nav { display: flex; gap: 6px; padding: 12px 20px 0; }
+      nav button { border: 0; border-radius: 9px; padding: 7px 12px; font: 600 12px inherit; background: transparent; color: #c7c7cc; cursor: pointer; }
+      nav button[aria-selected="true"] { background: #f5f5f7; color: #111114; }
+      main { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 14px 20px; align-content: start; }
+      .item { border: 2px solid transparent; border-radius: 12px; padding: 6px; background: #2c2c2e; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+      .item img { width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 7px; display: block; }
+      .item span { display: block; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .item[aria-pressed="true"] { border-color: #e8572a; }
+      footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid #3a3a3c; }
+      footer button { border: 0; border-radius: 10px; padding: 9px 16px; font: 600 13px inherit; cursor: pointer; }
+      #cancel { background: #3a3a3c; color: #f5f5f7; }
+      #share { background: #f5f5f7; color: #111114; }
+      #share:disabled { opacity: 0.4; cursor: default; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>O que você quer apresentar?</h1>
+      <p>Quem estiver na sala vê e pode rabiscar por cima.</p>
+    </header>
+    <nav role="tablist">
+      <button role="tab" data-tab="screen" aria-selected="true">Tela inteira</button>
+      <button role="tab" data-tab="window" aria-selected="false">Janela</button>
+    </nav>
+    <main id="list"></main>
+    <footer>
+      <button id="cancel">Cancelar</button>
+      <button id="share" disabled>Apresentar</button>
+    </footer>
+    <script>
+      let all = [];
+      let tab = "screen";
+      let chosen = null;
+      const list = document.getElementById("list");
+      const share = document.getElementById("share");
+      function render() {
+        list.textContent = "";
+        for (const s of all.filter((x) => (tab === "screen") === x.screen)) {
+          const b = document.createElement("button");
+          b.className = "item";
+          b.setAttribute("aria-pressed", String(s.id === chosen));
+          const img = document.createElement("img");
+          img.src = s.thumb;
+          img.alt = "";
+          const name = document.createElement("span");
+          name.textContent = s.screen ? s.name.replace(/^Screen/i, "Tela").replace(/^Entire screen/i, "Tela inteira") : s.name;
+          b.append(img, name);
+          b.onclick = () => { chosen = s.id; share.disabled = false; render(); };
+          b.ondblclick = () => window.picker.choose(s.id);
+          list.append(b);
+        }
+      }
+      document.querySelectorAll("nav button").forEach((b) => {
+        b.onclick = () => {
+          tab = b.dataset.tab;
+          document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+          render();
+        };
+      });
+      document.getElementById("cancel").onclick = () => window.picker.choose(null);
+      share.onclick = () => chosen && window.picker.choose(chosen);
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") window.picker.choose(null); });
+      window.picker.sources().then((s) => {
+        all = s;
+        const screens = all.filter((x) => x.screen);
+        if (screens.length === 1) { chosen = screens[0].id; share.disabled = false; }
+        render();
+      });
+    </script>
+  </body>
+</html>
