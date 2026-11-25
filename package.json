@@ -1,7 +1,7 @@
 {
   "name": "jumzi-desktop",
   "productName": "JUMZI",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "JUMZI para Windows, macOS e Linux",
   "private": true,
   "main": "main.js",
