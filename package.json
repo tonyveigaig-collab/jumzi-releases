@@ -155,23 +155,37 @@
     "deb": {
       "artifactName": "jumzi_${arch}.${ext}",
       "depends": [
+        "libgtk-3-0",
         "libnotify4",
-        "libxtst6",
         "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
         "libsecret-1-0",
         "libasound2t64 | libasound2",
-        "xdg-utils"
+        "libgbm1",
+        "libdbus-1-3",
+        "libdrm2"
       ]
     },
     "rpm": {
       "artifactName": "jumzi-${arch}.${ext}",
       "depends": [
+        "gtk3",
         "libnotify",
-        "libXtst",
         "nss",
+        "libXScrnSaver",
+        "(libXtst or libXtst6)",
+        "xdg-utils",
+        "at-spi2-core",
+        "(libuuid or libuuid1)",
         "libsecret",
         "alsa-lib",
-        "xdg-utils"
+        "mesa-libgbm",
+        "dbus-libs",
+        "libdrm"
       ]
     }
   },
