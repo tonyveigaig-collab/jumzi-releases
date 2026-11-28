@@ -274,7 +274,10 @@ function setupPermissions() {
     }
     try {
       const sources = await desktopCapturer.getSources({ types: ["screen", "window"], thumbnailSize: { width: 320, height: 180 }, fetchWindowIcons: false });
-      const choice = await pickSource(sources);
+      // The site draws the picker itself when it can (no separate window, which some graphics drivers
+      // painted all black); the native picker window stays as the fallback.
+      const page = win && !win.isDestroyed() ? win.webContents : null;
+      const choice = page && pickerPages.has(page.id) ? await pickInPage(page, sources) : await pickSource(sources);
       const source = sources.find((s) => s.id === choice);
       if (!source) return callback({});
       // System audio is only available when sharing a whole screen on Windows.
@@ -286,12 +289,50 @@ function setupPermissions() {
   });
 }
 
-/** Modal window listing screens and windows with thumbnails. Resolves with the chosen source id. */
+/** Pages (webContents ids) that draw the screen picker themselves (see preload-app.js). */
+const pickerPages = new Set();
+ipcMain.on("desktop:picker-ready", (e) => {
+  const wc = e.sender;
+  if (pickerPages.has(wc.id)) return;
+  pickerPages.add(wc.id);
+  // A reload or a new page has to announce itself again.
+  const forget = () => pickerPages.delete(wc.id);
+  wc.once("did-start-navigation", forget);
+  wc.once("destroyed", forget);
+});
+ipcMain.on("desktop:picker-gone", (e) => pickerPages.delete(e.sender.id));
+
+/** Asks the page to show its own picker. Resolves with the chosen source id (null: cancelled). */
+function pickInPage(page, sources) {
+  return new Promise((resolve) => {
+    const reqId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let timer = null;
+    const done = (choice) => {
+      ipcMain.removeListener("desktop:pick-screen-result", onResult);
+      clearTimeout(timer);
+      resolve(typeof choice === "string" && sources.some((s) => s.id === choice) ? choice : null);
+    };
+    const onResult = (e, id, choice) => {
+      if (e.sender !== page || id !== reqId) return;
+      done(choice);
+    };
+    ipcMain.on("desktop:pick-screen-result", onResult);
+    timer = setTimeout(() => done(null), 3 * 60 * 1000);
+    page.send(
+      "desktop:pick-screen",
+      reqId,
+      sources.map((s) => ({ id: s.id, name: s.name, thumb: s.thumbnail.toDataURL(), screen: s.id.startsWith("screen:") })),
+    );
+  });
+}
+
+/** Window listing screens and windows with thumbnails. Resolves with the chosen source id. */
 function pickSource(sources) {
   return new Promise((resolve) => {
     const picker = new BrowserWindow({
       parent: win ?? undefined,
-      modal: true,
+      // Not modal and shown only once painted: modal windows came up all black on some graphics drivers.
+      show: false,
       width: 760,
       height: 560,
       resizable: false,
@@ -314,6 +355,10 @@ function pickSource(sources) {
     ipcMain.handle("picker:sources", () => sources.map((s) => ({ id: s.id, name: s.name, thumb: s.thumbnail.toDataURL(), screen: s.id.startsWith("screen:") })));
     ipcMain.on("picker:choose", (_e, id) => finish(typeof id === "string" ? id : null));
     picker.on("closed", () => finish(null));
+    picker.once("ready-to-show", () => {
+      picker.show();
+      picker.focus();
+    });
     void picker.loadFile(path.join(__dirname, "picker.html"));
   });
 }

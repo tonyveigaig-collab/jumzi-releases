@@ -53,12 +53,18 @@ function notify(title, body, onClick) {
 /** MSI installs are managed by IT (Intune, GPO): they update through a new MSI, not by themselves. */
 function canSelfUpdate() {
   if (!app.isPackaged) return false;
+  // Installed from the Microsoft Store: the Store updates it (a self-update would break the package).
+  if (process.windowsStore) return false;
   if (installedType === "msi") return false;
   if (process.platform === "linux" && !process.env.APPIMAGE && installedType !== "deb" && installedType !== "rpm") return false;
   return true;
 }
 
 async function check({ manual = false } = {}) {
+  if (process.windowsStore) {
+    if (manual) await dialog.showMessageBox({ type: "info", message: "Atualizações deste JUMZI", detail: "Este JUMZI foi instalado pela Microsoft Store, que instala as novas versões sozinha." });
+    return;
+  }
   if (!canSelfUpdate()) {
     if (manual) {
       const r = await dialog.showMessageBox({

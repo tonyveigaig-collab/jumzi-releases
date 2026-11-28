@@ -1,7 +1,7 @@
 {
   "name": "jumzi-desktop",
   "productName": "JUMZI",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "JUMZI para Windows, macOS e Linux",
   "private": true,
   "main": "main.js",
@@ -85,6 +85,17 @@
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
+    },
+    "appx": {
+      "artifactName": "JUMZI-Store-${arch}.${ext}",
+      "applicationId": "JUMZI",
+      "displayName": "JUMZI",
+      "identityName": "SET.BY.CI",
+      "publisher": "CN=SET-BY-CI",
+      "publisherDisplayName": "JUMZI",
+      "backgroundColor": "#1F5EFF",
+      "languages": ["pt-BR", "en-US"],
+      "showNameOnTiles": true
     },
     "msi": {
       "artifactName": "JUMZI-${arch}.${ext}",

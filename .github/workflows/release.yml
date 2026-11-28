@@ -96,6 +96,37 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # Microsoft Store package (MSIX). Microsoft signs it when the Store publishes it, so it installs with no
+  # SmartScreen / Smart App Control warning. Needs the repository variables from Partner Center
+  # (Product identity): STORE_IDENTITY_NAME, STORE_PUBLISHER (CN=…), STORE_PUBLISHER_DISPLAY_NAME.
+  # The .appx files are uploaded by hand in Partner Center; they are not part of the GitHub release.
+  store:
+    name: Build Microsoft Store package
+    needs: unit
+    if: ${{ vars.STORE_IDENTITY_NAME != '' }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Build .appx (x64 + arm64)
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: >
+          npx electron-builder --win appx --x64 --arm64 --publish never
+          -c.appx.identityName="${{ vars.STORE_IDENTITY_NAME }}"
+          -c.appx.publisher="${{ vars.STORE_PUBLISHER }}"
+          -c.appx.publisherDisplayName="${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store
+          path: dist/*.appx
+          if-no-files-found: error
+          retention-days: 30
+
   test-windows:
     name: Test ${{ matrix.name }}
     needs: build
@@ -233,6 +264,8 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="v$VERSION"
+          # The Store package goes to Partner Center, not to the public release.
+          rm -f dist/*.appx
           # Older download links pointed at JUMZI-Setup.exe: keep it as the x64 installer.
           cp dist/JUMZI-Setup-x64.exe dist/JUMZI-Setup.exe
           ls -la dist

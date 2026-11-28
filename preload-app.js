@@ -19,6 +19,20 @@ contextBridge.exposeInMainWorld("jumziDesktop", {
   checkForUpdates: () => ipcRenderer.send("desktop:check-updates"),
   getSettings: () => ipcRenderer.invoke("desktop:settings"),
   setSetting: (key, value) => ipcRenderer.invoke("desktop:set-setting", String(key), Boolean(value)),
+  /**
+   * Screen sharing: the site draws the list of screens and windows itself. `fn(sources, choose)` is
+   * called with the list ({ id, name, thumb, screen }); call `choose(id)` with the pick, or
+   * `choose(null)` to cancel. Returns a function that stops listening.
+   */
+  onPickScreen: (fn) => {
+    const handler = (_e, reqId, sources) => fn(sources, (id) => ipcRenderer.send("desktop:pick-screen-result", reqId, typeof id === "string" ? id : null));
+    ipcRenderer.on("desktop:pick-screen", handler);
+    ipcRenderer.send("desktop:picker-ready");
+    return () => {
+      ipcRenderer.removeListener("desktop:pick-screen", handler);
+      ipcRenderer.send("desktop:picker-gone");
+    };
+  },
   onUpdate: (fn) => {
     const handler = (_e, state) => fn(state);
     ipcRenderer.on("desktop:update", handler);
